@@ -149,6 +149,9 @@ def bvalue(t):
     from .task import value
     try:
         return value(t)
-    except:
-        raise BarrierError
+    except Exception as e:
+        import logging
+        logging.getLogger('jug.barrier').debug(
+            "bvalue(%s) failed: %s: %s", t, type(e).__name__, e, exc_info=True)
+        raise BarrierError from e
 
