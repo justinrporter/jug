@@ -151,7 +151,7 @@ def bvalue(t):
         return value(t)
     except Exception as e:
         import logging
-        logging.getLogger('jug.barrier').debug(
-            "bvalue(%s) failed: %s: %s", t, type(e).__name__, e, exc_info=True)
+        logging.getLogger('jug.barrier').warning(
+            "bvalue() failed: %s: %s", type(e).__name__, e)
         raise BarrierError from e
 

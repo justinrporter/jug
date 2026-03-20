@@ -171,7 +171,11 @@ tricky to support since the general code relies on the function name)''')
         -------
         Nothing
         '''
-        assert self.can_load()
+        if not self.can_load():
+            raise RuntimeError(
+                "Task %s (hash=%s) result not available in store. "
+                "Store type: %s. File exists check failed."
+                % (self.name, self.hash(), type(self.store).__name__))
         self._result = self.store.load(self.hash())
 
     def invalidate(self):

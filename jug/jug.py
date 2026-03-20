@@ -100,8 +100,17 @@ def init(jugfile=None, jugdir=None, on_error='exit', store=None):
     try:
         with open(jugfile) as jfile:
             exec(compile(jfile.read(), jugfile, 'exec'), jugspace, jugspace)
-    except BarrierError:
+    except BarrierError as e:
         jugspace['__jug__hasbarrier__'] = True
+        if e.__cause__ is not None:
+            logging.warning("Barrier hit during jugfile execution (caused by %s: %s). "
+                            "Only %d task(s) visible to status.",
+                            type(e.__cause__).__name__, e.__cause__,
+                            len(task.alltasks))
+        else:
+            logging.info("Barrier hit during jugfile execution. "
+                         "Only %d task(s) visible to status.",
+                         len(task.alltasks))
     except Exception as e:
         logging.critical("Could not import file '%s' (error: %s)", jugfile, e)
         if on_error == 'exit':
