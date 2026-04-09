@@ -29,6 +29,7 @@ from .task import Task, TaskGenerator, Tasklet, value
 
 __all__ = [
     'timed_path',
+    'hashed_path',
     'identity',
     'jug_execute',
     'CustomHash',
@@ -160,6 +161,62 @@ def timed_path(path):
         A task equivalent to ``(lambda: ipath)``.
     '''
     return CustomHash(path, hash_with_mtime_size)
+
+
+def hash_with_file_content(path, include_path=True):
+    '''hvalue = hash_with_file_content(path, include_path=True)
+
+    Computes a hash that depends solely on the contents of the file ``path``.
+
+    Parameters
+    ----------
+    path : filepath
+    include_path : bool, optional (default: True)
+        If True, the file path is included in the hash so that two files with
+        identical content but different paths produce different hashes.
+        If False, only the file contents contribute to the hash.
+
+    Returns
+    -------
+    hvalue : bytes
+        A hashed version
+    '''
+    from .hash import new_hash_object, hash_one
+    sha = new_hash_object()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(65536), b''):
+            sha.update(chunk)
+    content_hash = sha.hexdigest()
+    if include_path:
+        return hash_one((path, content_hash))
+    return hash_one(content_hash)
+
+
+def hashed_path(path, include_path=True):
+    '''path = hashed_path(path, include_path=True)
+
+    Returns an object that returns `path` when passed to a jug Task, but
+    uses a SHA-1 hash of the file's *contents* (not its timestamp) to
+    determine cache validity. Tasks are recomputed only when the file
+    content actually changes, not when the mtime is updated.
+
+    Parameters
+    ----------
+    ipath : str
+        A filesystem path
+    include_path : bool, optional (default: True)
+        If True (default), two files with the same content but different paths
+        are treated as distinct inputs and tasks are cached separately.
+        If False, only the file contents determine the hash, so two files with
+        identical content share the same cached result regardless of path.
+
+    Returns
+    -------
+    opath : str
+        A task-equivalent wrapping the path.
+    '''
+    hash_fn = partial(hash_with_file_content, include_path=include_path)
+    return CustomHash(path, hash_fn)
 
 
 def prepare_task_matcher(pattern):
